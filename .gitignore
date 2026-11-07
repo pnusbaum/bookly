@@ -428,7 +428,6 @@ FodyWeavers.xsd
 #*.lscache
 
 # --- Frontend (React / Vite) ---
-node_modules/
 dist/
 .vite/
 *.local
@@ -449,8 +448,5 @@ service-account*.json
 
 # --- IDE / OS ---
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/launch.json
 .DS_Store
 Thumbs.db
