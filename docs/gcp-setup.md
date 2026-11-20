@@ -140,6 +140,65 @@ gcloud run services update bookly --service-account=bookly-runtime@bookly-pn.iam
 ```
 
 
+## 8. Workload Identity Federation (GitHub Actions → GCP)
+
+GitHub Actions loguje się do GCP bez kluczy JSON. Dla każdego uruchomienia workflow GitHub wystawia
+podpisany token OIDC (zawiera m.in. repozytorium i gałąź). GCP wymienia go na krótkotrwały (1 h) token
+konta `bookly-deployer` – ale tylko jeśli token spełnia warunki dostawcy. W sekretach repo nie ma
+niczego, co dałoby się ukraść.
+
+```
+token OIDC z GitHuba → STS (sprawdza wystawcę i warunek) → token federacyjny
+  → IAM (sprawdza workloadIdentityUser na deployerze) → token dostępu bookly-deployer (1 h)
+```
+
+### 8.1. Pula tożsamości
+
+Kontener na tożsamości zewnętrzne – tutaj z GitHuba.
+
+```bash
+gcloud iam workload-identity-pools create github --location=global --display-name="GitHub Actions"
+```
+
+Nie usuwać i nie tworzyć ponownie „na próbę” – usunięta pula blokuje swoje ID przez 30 dni.
+
+### 8.2. Dostawca OIDC
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc bookly-repo --location=global --workload-identity-pool=github --display-name="pnusbaum/bookly" --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" --attribute-condition="assertion.repository=='pnusbaum/bookly' && assertion.ref=='refs/heads/main'"
+```
+
+- `--issuer-uri` – ufamy wyłącznie tokenom wystawionym przez GitHub Actions.
+- `--attribute-mapping` – które pola tokenu GitHuba są dostępne w GCP (repozytorium, gałąź).
+- `--attribute-condition` – **najważniejsze**: wpuszczamy tylko repozytorium `pnusbaum/bookly` i tylko gałąź `main`.
+  Bez warunku dowolne repozytorium na GitHubie mogłoby wymienić swój token w tej puli.
+  Gałęzie robocze i pull requesty nie dostaną się do GCP.
+
+Pełna nazwa dostawcy (używana w workflow):
+
+```
+projects/610029244011/locations/global/workloadIdentityPools/github/providers/bookly-repo
+```
+
+### 8.3. Pozwolenie dla repozytorium na działanie jako bookly-deployer
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding bookly-deployer@bookly-pn.iam.gserviceaccount.com --role="roles/iam.workloadIdentityUser" --member="principalSet://iam.googleapis.com/projects/610029244011/locations/global/workloadIdentityPools/github/attribute.repository/pnusbaum/bookly"
+```
+
+`principalSet://…/attribute.repository/pnusbaum/bookly` = wszystkie tożsamości z puli `github`
+pochodzące z repozytorium `pnusbaum/bookly`. W ścieżce jest **numer** projektu (`610029244011`), nie jego ID.
+
+### 8.4. Weryfikacja
+
+```bash
+gcloud iam workload-identity-pools providers describe bookly-repo --location=global --workload-identity-pool=github --format="yaml(name,state,attributeCondition,attributeMapping,oidc.issuerUri)"
+gcloud iam service-accounts get-iam-policy bookly-deployer@bookly-pn.iam.gserviceaccount.com
+```
+
+Oczekiwane: `state: ACTIVE`, warunek z repozytorium i gałęzią `main`, rola `roles/iam.workloadIdentityUser` dla `principalSet://…/pnusbaum/bookly`.
+
+
 ## Do zapamiętania
 
 - [x] Usługa działa na domyślnym koncie usługowym Compute Engine (rola Editor na projekcie). Przed podłączeniem bucketa (Litestream): dedykowane konto usługowe z minimalnymi uprawnieniami.
