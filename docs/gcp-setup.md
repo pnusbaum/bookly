@@ -37,7 +37,7 @@ gcloud billing projects link bookly-pn --billing-account=<BILLING_ACCOUNT_ID>
 | Budżet | Typ | Zakres | Kwota | Działanie |
 |---|---|---|---|---|
 | `bookly-budget` | tylko alerty | bookly-pn, wszystkie usługi | 5 PLN / mies. | maile przy 50%, 90%, 100% |
-| `bookly-run-cap` | spend cap | bookly-pn, tylko Cloud Run | 10 PLN / mies. | po przekroczeniu Cloud Run wstrzymany do końca miesiąca lub ręcznego zdjęcia limitu |
+| `bookly-spend-cap` | spend cap | bookly-pn, tylko Cloud Run | 10 PLN / mies. | po przekroczeniu Cloud Run wstrzymany do końca miesiąca lub ręcznego zdjęcia limitu |
 
 - Budżetu z alertami nie da się przekształcić w budżet z limitem, trzeba utworzyć nowy.
 - Spend cap liczy koszt brutto (bez kredytów) i działa z opóźnieniem kilku godzin.
