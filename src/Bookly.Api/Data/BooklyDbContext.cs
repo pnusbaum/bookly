@@ -21,4 +21,8 @@ public class BooklyDbContext(DbContextOptions<BooklyDbContext> options) : DbCont
             book.Property(b => b.Borrower).HasMaxLength(200);
         });
     }
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+    }
 }
