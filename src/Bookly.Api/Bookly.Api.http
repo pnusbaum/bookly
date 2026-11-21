@@ -1,0 +1,62 @@
+#@baseUrl = http://localhost:5116
+@baseUrl = http://localhost:8080
+
+### Health Check
+GET {{baseUrl}}/api/health
+
+### Lista
+GET {{baseUrl}}/api/books
+
+### Dodanie
+# @name create
+POST {{baseUrl}}/api/books
+Content-Type: application/json
+
+{
+  "isbn13": "9788375780635",
+  "title": "Ostatnie życzenie",
+  "authors": "Andrzej Sapkowski",
+  "publisher": "superNOWA",
+  "publishedYear": 2014,
+  "language": "pl",
+  "status": "Read",
+  "location": "Salon",
+  "rating": 5
+}
+
+### Pobranie dodanej
+GET {{baseUrl}}/api/books/{{create.response.body.id}}
+
+### Edycja (wypożyczenie)
+PUT {{baseUrl}}/api/books/{{create.response.body.id}}
+Content-Type: application/json
+
+{
+  "isbn13": "9788375780635",
+  "title": "Ostatnie życzenie",
+  "authors": "Andrzej Sapkowski",
+  "status": "Read",
+  "location": "Salon",
+  "borrower": "Kasia",
+  "borrowedAt": "2026-11-21T18:00:00Z",
+  "rating": 5
+}
+
+### Duplikat ISBN → 409
+POST {{baseUrl}}/api/books
+Content-Type: application/json
+
+{ "isbn13": "9788375780635", "title": "Duplikat", "authors": "Ktoś", "status": "ToRead" }
+
+### Błędy walidacji → 400
+POST {{baseUrl}}/api/books
+Content-Type: application/json
+
+{ "isbn13": "123", "title": "", "authors": "X", "rating": 7, "status": "ToRead" }
+
+### Usunięcie → 204, ponowne → 404
+DELETE {{baseUrl}}/api/books/{{create.response.body.id}}
+
+
+### Nieistniejąca → 404
+GET {{baseUrl}}/api/books/99999

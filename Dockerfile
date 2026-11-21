@@ -25,5 +25,7 @@ COPY --from=web-build /src/dist ./wwwroot
 # Cloud Run domyślnie wysyła ruch na port 8080
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
+RUN mkdir -p /data && chown $APP_UID /data
+ENV ConnectionStrings__Bookly="Data Source=/data/bookly.db"
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Bookly.Api.dll"]
