@@ -4,7 +4,7 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok (new)" }));
 
 // Nieznane /api/* → 404, a nie index.html
 app.MapFallback("/api/{**rest}", () => Results.NotFound());
